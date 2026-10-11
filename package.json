@@ -1,0 +1,13 @@
+{
+  "name": "nomina-sesion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Capa de acceso a datos para login y objeto de sesión",
+  "main": "src/index.js",
+  "scripts": {
+    "create-user": "node scripts/create-user.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.0"
+  }
+}
