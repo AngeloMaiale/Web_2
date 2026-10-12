@@ -36,17 +36,37 @@ class AuthService {
     }
   }
 
-  /** Autentica y crea la sesión. Lanza ValidationError o AuthError. Devuelve SessionObject. */
-  async login(username, password) {
+  /**
+   * Valida credenciales contra la BD y obtiene los perfiles del usuario.
+   * No genera tokens en la BD; ideal para manejo de sesiones con express-session.
+   */
+  async authenticate(username, password) {
     AuthService.validateCredentials(username, password);
 
     const user = await this.users.findByUsername(username.trim());
     const ok = PasswordHasher.verify(password, user ? user.password_hash : DUMMY_HASH);
     if (!user || !user.active || !ok) throw new AuthError(INVALID_CREDENTIALS);
 
-    const { token, expiresAt } = await this.sessions.create(user.id, this.ttlHours);
     const profile = await this.users.getProfiles(user.id);
-    return new SessionObject({ userId: user.id, username: user.username, profile, token, expiresAt });
+    return {
+      userId: user.id,
+      username: user.username,
+      email: user.email,
+      profile,
+    };
+  }
+
+  /** Autentica y crea la sesión. Lanza ValidationError o AuthError. Devuelve SessionObject. */
+  async login(username, password) {
+    const authData = await this.authenticate(username, password);
+    const { token, expiresAt } = await this.sessions.create(authData.userId, this.ttlHours);
+    return new SessionObject({
+      userId: authData.userId,
+      username: authData.username,
+      profile: authData.profile,
+      token,
+      expiresAt,
+    });
   }
 
   /** ¿Tiene sesión? SessionObject si el token es válido; null si debe autenticarse. */

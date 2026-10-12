@@ -37,7 +37,31 @@ docker compose down -v && docker compose up -d --build --wait
 
 Los scripts de `db/` solo se ejecutan al crear el volumen: tras cambiar el esquema, cada quien debe hacer este reinicio.
 
+## Servidor de Sesiones (Express)
+
+El proyecto incluye un servidor Express con un objeto de sesión propio (`ExpressSession`) que implementa y envuelve `express-session`, manejando `UserId`, `UserName`, `Profile[]` y las variables de cookies.
+
+### Iniciar el servidor
+```bash
+npm start   # corre en http://localhost:3000
+```
+
+### Endpoints disponibles
+- **`POST /api/auth/login`**: Valida credenciales contra la BD.
+  - Si ya tiene sesión activa: responde que ya tiene sesión iniciada (`alreadyAuthenticated: true`).
+  - Si no tiene sesión: valida usuario/contraseña y crea la sesión en Express con sus perfiles y cookie.
+- **`GET /api/auth/session`**: Retorna el estado actual de la sesión, datos de usuario y parámetros de cookie (`maxAge`, `expires`, etc.).
+- **`POST /api/auth/logout`**: Cierra la sesión en el servidor y limpia la cookie del cliente.
+- **`GET /api/auth/me`**: Ruta protegida por middleware `requireSession`.
+- **`GET /api/auth/admin-check`**: Ruta protegida por rol (requiere `ADMIN`).
+
+### Pruebas del flujo de sesión
+Puedes ejecutar la prueba automatizada que valida el flujo completo (login, verificación de sesión previa, roles y logout):
+```bash
+node scripts/test-session-flow.js
+```
+
 ## Documentación
 
 - [Modelo de datos](docs/modelo-de-datos.md)
-- [Guía de integración (login y objeto de sesión)](docs/guia-integracion.md)
+- [Guía de integración (login, sockets y Express Session)](docs/guia-integracion.md)

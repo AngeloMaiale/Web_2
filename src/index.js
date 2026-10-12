@@ -6,6 +6,11 @@ const { AuthService, AuthError, ValidationError } = require('./services/AuthServ
 const SessionObject = require('./models/SessionObject');
 const PasswordHasher = require('./security/PasswordHasher');
 
+const ExpressSession = require('./session/ExpressSession');
+const { createSessionMiddleware, requireSession, requireRole } = require('./middleware/sessionMiddleware');
+const createApp = require('./app');
+const createAuthRoutes = require('./routes/authRoutes');
+
 /** Arma todo con una sola llamada: const { auth, db } = createAuth(); */
 function createAuth(dbConfig = {}) {
   const db = new Database(dbConfig);
@@ -16,6 +21,20 @@ function createAuth(dbConfig = {}) {
 }
 
 module.exports = {
-  createAuth, Database, UserRepository, SessionRepository,
-  AuthService, AuthError, ValidationError, SessionObject, PasswordHasher,
+  createAuth,
+  Database,
+  UserRepository,
+  SessionRepository,
+  AuthService,
+  AuthError,
+  ValidationError,
+  SessionObject,
+  PasswordHasher,
+  // Integración Express Session
+  ExpressSession,
+  createSessionMiddleware,
+  requireSession,
+  requireRole,
+  createApp,
+  createAuthRoutes,
 };

@@ -177,3 +177,22 @@ Orden recomendado: (1) todos preparan el entorno; (2) servidor y frontend acuerd
 - Se puede limpiar sesiones vencidas con `sessionRepository.deleteExpired()` (por ejemplo al arrancar el servidor).
 - Los ids numéricos llegan como `number`. `data` de cada perfil es JSON libre.
 - No usé "Lib-Socket-Cli" ni "RDBM ID-Port" porque no conozco su interfaz; si imponen una forma de manejar eventos, el contrato de la sección 4 se adapta sin tocar `src/`.
+
+## 9. Servidor Express con Wrapper de express-session
+
+Para arquitectura HTTP/REST con Express y cookies de sesión:
+
+### Endpoints disponibles
+- **`POST /api/auth/login`**: Valida credenciales contra la BD.
+  - Si ya tiene sesión: responde `{ ok: true, alreadyAuthenticated: true, message: "Ya tiene sesión iniciada", session }`.
+  - Si no tiene sesión: valida en BD y crea `req.session.user` con `userId`, `username`, `profile[]`.
+- **`GET /api/auth/session`**: Devuelve el estado actual de la sesión, datos del usuario y variables de cookies (`maxAge`, `expires`, etc.).
+- **`POST /api/auth/logout`**: Destruye la sesión en Express y elimina la cookie en el cliente.
+- **`GET /api/auth/me`**: Ruta protegida por middleware `requireSession`.
+- **`GET /api/auth/admin-check`**: Ruta protegida por middleware `requireRole('ADMIN')`.
+
+### Ejecución
+```bash
+npm start   # Inicia el servidor en http://localhost:3000
+```
+
