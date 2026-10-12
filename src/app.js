@@ -27,11 +27,15 @@ function createApp({ authService, secret, ttlHours, sessionOptions = {} } = {}) 
     })
   );
 
+  // Servir frontend estático
+  const path = require('path');
+  app.use(express.static(path.join(__dirname, '../frontend')));
+
   // Montar rutas de autenticación
   app.use('/api/auth', createAuthRoutes());
 
-  // Ruta informativa de bienvenida/estado
-  app.get('/', (req, res) => {
+  // Ruta informativa de estado de la API
+  app.get('/api/status', (req, res) => {
     res.json({
       name: 'Sistema de Nómina (Venezuela) - Módulo de Sesión Express',
       hasActiveSession: req.userSession.hasSession(),
