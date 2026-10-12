@@ -1,0 +1,19 @@
+services:
+  db:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: nomina-db
+    container_name: nomina-db
+    ports:
+      - "${NOMINA_DB_PORT:-5433}:5432"   # 5433 en el host para no chocar con un Postgres local
+    volumes:
+      - nomina-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nomina -d nomina"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  nomina-data:

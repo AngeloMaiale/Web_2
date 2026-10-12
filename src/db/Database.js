@@ -7,7 +7,18 @@ types.setTypeParser(20, (v) => Number(v));
 /** Envoltorio mínimo del pool de pg. Usa las variables PG* del entorno por defecto. */
 class Database {
   constructor(config = {}) {
-    this.pool = new Pool({ options: '-c search_path=payroll,public', ...config });
+    // Por defecto apunta a la base de datos Docker del proyecto (docker compose up -d).
+    // Cualquier variable PG* del entorno, o un objeto config, la sobrescribe.
+    const env = process.env;
+    this.pool = new Pool({
+      host: env.PGHOST || 'localhost',
+      port: Number(env.PGPORT) || 5433,
+      user: env.PGUSER || 'nomina',
+      password: env.PGPASSWORD || 'nomina',
+      database: env.PGDATABASE || 'nomina',
+      options: '-c search_path=payroll,public',
+      ...config,
+    });
   }
 
   /** Devuelve las filas directamente. */

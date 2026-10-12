@@ -4,15 +4,20 @@ Para quienes hacen el **servidor** y el **frontend**. La capa de base de datos y
 
 ## 1. Preparar el entorno (una vez por persona)
 
-1. Crear una base de datos en Postgres (ej. `nomina`).
-2. Ejecutar, en este orden:
-   ```bash
-   psql -d nomina -f db/schema.sql
-   psql -d nomina -f db/auth_schema.sql
-   ```
-3. Copiar `.env.example` a `.env` y ajustar `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`. Si usan `dotenv` o similar, cárguenlo **antes** de llamar a `createAuth()`.
-4. `npm install`
-5. Crear un usuario de prueba:
+Requisitos: Docker Desktop y Node.js. No hace falta instalar Postgres ni configurar credenciales.
+
+```bash
+docker compose up -d --build --wait   # levanta la BD con el esquema y datos demo ya cargados
+npm install
+```
+
+- La base queda en `localhost:5433` (usuario/clave/base: `nomina`). `src/` ya apunta ahí por defecto, sin `.env`.
+- Usuario demo listo: **`admin` / `Admin123`** (con dos perfiles: `ADMIN` y `PAYROLL_MANAGER`).
+- **Reiniciar la BD de cero** (si alguien la dejó sucia o cambió el esquema): `docker compose down -v && docker compose up -d --build --wait`
+- Detener sin perder datos: `docker compose down`. Si el puerto 5433 está ocupado: `NOMINA_DB_PORT=5434 docker compose up -d` y `PGPORT=5434` al correr Node.
+- **Cambios en el esquema:** editar `db/*.sql`, commitear, y cada quien hace el reinicio de cero de arriba. Los scripts solo se ejecutan al crear el volumen.
+- Los datos demo están en `db/seed_dev.sql` (solo desarrollo).
+- Crear más usuarios:
    ```bash
    npm run create-user -- maria Clave123 ADMIN "María Admin"
    ```
