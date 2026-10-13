@@ -17,11 +17,6 @@ class ExpressSession {
     this._authService = authService;
   }
 
-  /** Acceso al objeto nativo req.session de express-session */
-  get rawSession() {
-    return this._req?.session || null;
-  }
-
   /** ID de la sesión asignado por express-session */
   get sessionId() {
     return this._req?.sessionID || this._req?.session?.id || null;
@@ -31,18 +26,10 @@ class ExpressSession {
   get userId() {
     return this._req?.session?.user?.userId ?? null;
   }
-  // Alias UserId para compatibilidad directa con el diagrama
-  get UserId() {
-    return this.userId;
-  }
 
   /** Nombre del usuario */
   get username() {
     return this._req?.session?.user?.username ?? null;
-  }
-  // Alias UserName para compatibilidad directa con el diagrama
-  get UserName() {
-    return this.username;
   }
 
   /**
@@ -51,10 +38,6 @@ class ExpressSession {
    */
   get profile() {
     return this._req?.session?.user?.profile ?? [];
-  }
-  // Alias Profile para compatibilidad directa con el diagrama
-  get Profile() {
-    return this.profile;
   }
 
   /** Fecha y hora en la que se inició la sesión */
@@ -83,14 +66,6 @@ class ExpressSession {
    */
   hasSession() {
     return Boolean(this._req?.session?.user?.userId);
-  }
-
-  /**
-   * Valida si el usuario actual cuenta con un rol determinado dentro de sus perfiles.
-   * @param {string} roleCode - Ej: 'ADMIN', 'PAYROLL_MANAGER', 'EMPLOYEE'
-   */
-  hasRole(roleCode) {
-    return this.profile.some((p) => p.role === roleCode);
   }
 
   /**

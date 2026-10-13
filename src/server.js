@@ -15,8 +15,6 @@ const server = app.listen(PORT, () => {
   console.log(`  POST /api/auth/login        - Iniciar sesión (valida BD y crea cookie)`);
   console.log(`  GET  /api/auth/session      - Consultar sesión actual y cookies`);
   console.log(`  POST /api/auth/logout       - Destruir sesión y limpiar cookies`);
-  console.log(`  GET  /api/auth/me           - Ruta protegida por sesión`);
-  console.log(`  GET  /api/auth/admin-check  - Ruta protegida por rol ADMIN`);
   console.log(`======================================================\n`);
 });
 

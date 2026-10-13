@@ -1,6 +1,5 @@
 'use strict';
 const PasswordHasher = require('../security/PasswordHasher');
-const SessionObject = require('../models/SessionObject');
 
 class AuthError extends Error {
   constructor(message) {
@@ -21,10 +20,8 @@ const INVALID_CREDENTIALS = 'Usuario o contraseña incorrectos';
 const DUMMY_HASH = PasswordHasher.hash('dummy-password');
 
 class AuthService {
-  constructor({ userRepository, sessionRepository, ttlHours = Number(process.env.SESSION_TTL_HOURS) || 8 }) {
+  constructor({ userRepository }) {
     this.users = userRepository;
-    this.sessions = sessionRepository;
-    this.ttlHours = ttlHours;
   }
 
   static validateCredentials(username, password) {
@@ -38,7 +35,7 @@ class AuthService {
 
   /**
    * Valida credenciales contra la BD y obtiene los perfiles del usuario.
-   * No genera tokens en la BD; ideal para manejo de sesiones con express-session.
+   * No genera tokens en la BD; la sesión la maneja express-session.
    */
   async authenticate(username, password) {
     AuthService.validateCredentials(username, password);
@@ -54,34 +51,6 @@ class AuthService {
       email: user.email,
       profile,
     };
-  }
-
-  /** Autentica y crea la sesión. Lanza ValidationError o AuthError. Devuelve SessionObject. */
-  async login(username, password) {
-    const authData = await this.authenticate(username, password);
-    const { token, expiresAt } = await this.sessions.create(authData.userId, this.ttlHours);
-    return new SessionObject({
-      userId: authData.userId,
-      username: authData.username,
-      profile: authData.profile,
-      token,
-      expiresAt,
-    });
-  }
-
-  /** ¿Tiene sesión? SessionObject si el token es válido; null si debe autenticarse. */
-  async getSession(token) {
-    if (typeof token !== 'string' || !token) return null;
-    const session = await this.sessions.findValid(token);
-    if (!session) return null;
-    const user = await this.users.findById(session.userId);
-    if (!user || !user.active) return null;
-    const profile = await this.users.getProfiles(user.id);
-    return new SessionObject({ userId: user.id, username: user.username, profile, token, expiresAt: session.expiresAt });
-  }
-
-  logout(token) {
-    return this.sessions.delete(token);
   }
 }
 

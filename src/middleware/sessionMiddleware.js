@@ -43,44 +43,6 @@ function createSessionMiddleware({
   ];
 }
 
-/**
- * Middleware para proteger rutas que exigen sesión activa.
- */
-function requireSession(req, res, next) {
-  if (!req.userSession || !req.userSession.hasSession()) {
-    return res.status(401).json({
-      ok: false,
-      error: 'No autenticado: requiere inicio de sesión activo',
-    });
-  }
-  next();
-}
-
-/**
- * Middleware para proteger rutas según el rol (ADMIN, PAYROLL_MANAGER, EMPLOYEE, etc.)
- */
-function requireRole(roleCode) {
-  return (req, res, next) => {
-    if (!req.userSession || !req.userSession.hasSession()) {
-      return res.status(401).json({
-        ok: false,
-        error: 'No autenticado: requiere inicio de sesión activo',
-      });
-    }
-
-    if (!req.userSession.hasRole(roleCode)) {
-      return res.status(403).json({
-        ok: false,
-        error: `Acceso denegado: se requiere el rol ${roleCode}`,
-      });
-    }
-
-    next();
-  };
-}
-
 module.exports = {
   createSessionMiddleware,
-  requireSession,
-  requireRole,
 };

@@ -1,13 +1,11 @@
 'use strict';
 const Database = require('./db/Database');
 const UserRepository = require('./repositories/UserRepository');
-const SessionRepository = require('./repositories/SessionRepository');
 const { AuthService, AuthError, ValidationError } = require('./services/AuthService');
-const SessionObject = require('./models/SessionObject');
 const PasswordHasher = require('./security/PasswordHasher');
 
 const ExpressSession = require('./session/ExpressSession');
-const { createSessionMiddleware, requireSession, requireRole } = require('./middleware/sessionMiddleware');
+const { createSessionMiddleware } = require('./middleware/sessionMiddleware');
 const createApp = require('./app');
 const createAuthRoutes = require('./routes/authRoutes');
 
@@ -15,26 +13,21 @@ const createAuthRoutes = require('./routes/authRoutes');
 function createAuth(dbConfig = {}) {
   const db = new Database(dbConfig);
   const userRepository = new UserRepository(db);
-  const sessionRepository = new SessionRepository(db);
-  const auth = new AuthService({ userRepository, sessionRepository });
-  return { db, userRepository, sessionRepository, auth };
+  const auth = new AuthService({ userRepository });
+  return { db, userRepository, auth };
 }
 
 module.exports = {
   createAuth,
   Database,
   UserRepository,
-  SessionRepository,
   AuthService,
   AuthError,
   ValidationError,
-  SessionObject,
   PasswordHasher,
   // Integración Express Session
   ExpressSession,
   createSessionMiddleware,
-  requireSession,
-  requireRole,
   createApp,
   createAuthRoutes,
 };

@@ -1,7 +1,6 @@
 'use strict';
 const express = require('express');
 const { AuthError, ValidationError } = require('../services/AuthService');
-const { requireSession, requireRole } = require('../middleware/sessionMiddleware');
 
 function createAuthRoutes() {
   const router = express.Router();
@@ -63,34 +62,6 @@ function createAuthRoutes() {
       console.error('Error durante /logout:', err);
       return res.status(500).json({ ok: false, error: 'Error al cerrar sesión' });
     }
-  });
-
-  /**
-   * GET /me
-   * Ruta protegida: exige sesión activa.
-   */
-  router.get('/me', requireSession, (req, res) => {
-    return res.status(200).json({
-      ok: true,
-      user: {
-        userId: req.userSession.userId,
-        username: req.userSession.username,
-        profile: req.userSession.profile,
-      },
-      cookie: req.userSession.cookie,
-    });
-  });
-
-  /**
-   * GET /admin-check
-   * Ruta protegida por rol: exige que el usuario tenga el rol ADMIN.
-   */
-  router.get('/admin-check', requireRole('ADMIN'), (req, res) => {
-    return res.status(200).json({
-      ok: true,
-      message: 'Acceso autorizado para Administrador',
-      session: req.userSession.toJSON(),
-    });
   });
 
   return router;

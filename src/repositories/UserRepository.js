@@ -14,14 +14,7 @@ class UserRepository {
     );
   }
 
-  findById(id) {
-    return this.db.one(
-      'SELECT id, username, email, active FROM app_user WHERE id = $1',
-      [id]
-    );
-  }
-
-  /** Perfiles activos del usuario, ya con nombres de campo para el SessionObject. */
+  /** Perfiles activos del usuario, ya con nombres de campo para la sesión. */
   getProfiles(userId) {
     return this.db.query(
       `SELECT p.id AS "profileId", r.code AS role, r.name AS "roleName",

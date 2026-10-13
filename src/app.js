@@ -34,21 +34,6 @@ function createApp({ authService, secret, ttlHours, sessionOptions = {} } = {}) 
   // Montar rutas de autenticación
   app.use('/api/auth', createAuthRoutes());
 
-  // Ruta informativa de estado de la API
-  app.get('/api/status', (req, res) => {
-    res.json({
-      name: 'Sistema de Nómina (Venezuela) - Módulo de Sesión Express',
-      hasActiveSession: req.userSession.hasSession(),
-      endpoints: [
-        'POST /api/auth/login',
-        'GET  /api/auth/session',
-        'POST /api/auth/logout',
-        'GET  /api/auth/me',
-        'GET  /api/auth/admin-check',
-      ],
-    });
-  });
-
   return app;
 }
 
