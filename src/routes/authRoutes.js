@@ -5,11 +5,6 @@ const { AuthError, ValidationError } = require('../services/AuthService');
 function createAuthRoutes() {
   const router = express.Router();
 
-  /**
-   * POST /login
-   * Valida credenciales contra la BD y crea la sesión express,
-   * o devuelve la sesión si ya estaba iniciada.
-   */
   router.post('/login', async (req, res) => {
     try {
       const { username, password } = req.body || {};
@@ -29,10 +24,6 @@ function createAuthRoutes() {
     }
   });
 
-  /**
-   * GET /session
-   * Consulta el estado actual de la sesión y las variables de cookie.
-   */
   router.get('/session', (req, res) => {
     if (req.userSession.hasSession()) {
       return res.status(200).json({
@@ -50,10 +41,6 @@ function createAuthRoutes() {
     });
   });
 
-  /**
-   * POST /logout
-   * Destruye la sesión de express y borra la cookie.
-   */
   router.post('/logout', async (req, res) => {
     try {
       const result = await req.userSession.destroy();

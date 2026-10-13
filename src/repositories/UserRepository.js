@@ -5,7 +5,6 @@ class UserRepository {
     this.db = db;
   }
 
-  /** Incluye password_hash: solo para uso interno de autenticación. */
   findByUsername(username) {
     return this.db.one(
       `SELECT id, username, password_hash, email, active
@@ -14,7 +13,6 @@ class UserRepository {
     );
   }
 
-  /** Perfiles activos del usuario, ya con nombres de campo para la sesión. */
   getProfiles(userId) {
     return this.db.query(
       `SELECT p.id AS "profileId", r.code AS role, r.name AS "roleName",
@@ -35,7 +33,6 @@ class UserRepository {
     );
   }
 
-  /** Devuelve { id } o null si el rol no existe. */
   addProfile({ userId, roleCode, displayName, companyId = null, employeeId = null, data = {} }) {
     return this.db.one(
       `INSERT INTO user_profile (user_id, role_id, display_name, company_id, employee_id, data)

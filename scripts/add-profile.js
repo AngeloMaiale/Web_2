@@ -1,6 +1,4 @@
 'use strict';
-// Uso: node scripts/add-profile.js <usuario> <ROLE_CODE> "<Nombre perfil>"
-// Agrega un perfil (rol) más a un usuario que ya existe. Roles base: ADMIN, PAYROLL_MANAGER, EMPLOYEE.
 const { createAuth } = require('../src');
 
 (async () => {

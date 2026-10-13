@@ -9,7 +9,6 @@ const { createSessionMiddleware } = require('./middleware/sessionMiddleware');
 const createApp = require('./app');
 const createAuthRoutes = require('./routes/authRoutes');
 
-/** Arma todo con una sola llamada: const { auth, db } = createAuth(); */
 function createAuth(dbConfig = {}) {
   const db = new Database(dbConfig);
   const userRepository = new UserRepository(db);
@@ -25,7 +24,6 @@ module.exports = {
   AuthError,
   ValidationError,
   PasswordHasher,
-  // Integración Express Session
   ExpressSession,
   createSessionMiddleware,
   createApp,

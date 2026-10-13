@@ -16,7 +16,6 @@ class ValidationError extends Error {
 }
 
 const INVALID_CREDENTIALS = 'Usuario o contraseña incorrectos';
-// Hash de relleno: se verifica igual cuando el usuario no existe (tiempo de respuesta uniforme)
 const DUMMY_HASH = PasswordHasher.hash('dummy-password');
 
 class AuthService {
@@ -33,10 +32,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Valida credenciales contra la BD y obtiene los perfiles del usuario.
-   * No genera tokens en la BD; la sesión la maneja express-session.
-   */
   async authenticate(username, password) {
     AuthService.validateCredentials(username, password);
 

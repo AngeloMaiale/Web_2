@@ -1,51 +1,32 @@
 'use strict';
 
-/**
- * Objeto wrapper de Express Session.
- * Implementa y envuelve req.session de express-session,
- * gestionando UserId, UserName, Profile[] y variables de sesión/cookies.
- */
 class ExpressSession {
-  /**
-   * @param {import('express').Request} req - Petición de Express con req.session
-   * @param {import('express').Response} [res] - Respuesta de Express (opcional, para limpiar cookies)
-   * @param {Object} [authService] - Instancia de AuthService para validación contra la BD
-   */
   constructor(req, res = null, authService = null) {
     this._req = req;
     this._res = res;
     this._authService = authService;
   }
 
-  /** ID de la sesión asignado por express-session */
   get sessionId() {
     return this._req?.sessionID || this._req?.session?.id || null;
   }
 
-  /** ID numérico del usuario autenticado */
   get userId() {
     return this._req?.session?.user?.userId ?? null;
   }
 
-  /** Nombre del usuario */
   get username() {
     return this._req?.session?.user?.username ?? null;
   }
 
-  /**
-   * Lista de perfiles y roles del usuario:
-   * [{ profileId, role, roleName, displayName, companyId, employeeId, data }]
-   */
   get profile() {
     return this._req?.session?.user?.profile ?? [];
   }
 
-  /** Fecha y hora en la que se inició la sesión */
   get createdAt() {
     return this._req?.session?.user?.createdAt ?? null;
   }
 
-  /** Información y variables medidas en la sesión (cookie) */
   get cookie() {
     if (!this._req?.session?.cookie) return null;
     const c = this._req.session.cookie;
@@ -60,26 +41,15 @@ class ExpressSession {
     };
   }
 
-  /**
-   * Verifica si existe una sesión activa actualmente.
-   * Representa la condición "¿tiene session?" del flujo.
-   */
   hasSession() {
     return Boolean(this._req?.session?.user?.userId);
   }
 
-  /**
-   * Proceso de Login según el diagrama de flujo:
-   * 1. ¿Tiene sesión? -> Si ya tiene, retorna que ya cuenta con sesión iniciada.
-   * 2. Si no -> Valida datos (autenticación contra la BD mediante AuthService).
-   * 3. Si autentica -> Crea la sesión en Express guardando UserId, UserName y Profile[].
-   */
   async login(username, password) {
     if (!this._authService) {
       throw new Error('AuthService no configurado en ExpressSession');
     }
 
-    // 1. ¿Tiene sesión previa?
     if (this.hasSession()) {
       return {
         ok: true,
@@ -89,10 +59,8 @@ class ExpressSession {
       };
     }
 
-    // 2. Autentica contra la base de datos (lanza AuthError o ValidationError si falla)
     const authData = await this._authService.authenticate(username, password);
 
-    // 3. Crear sesión en el objeto express-session
     if (!this._req.session) {
       throw new Error('El middleware express-session no está activo o configurado en la petición');
     }
@@ -104,7 +72,6 @@ class ExpressSession {
       createdAt: new Date().toISOString(),
     };
 
-    // Guardado explícito para garantizar persistencia antes de responder
     await new Promise((resolve, reject) => {
       this._req.session.save((err) => {
         if (err) return reject(err);
@@ -120,22 +87,17 @@ class ExpressSession {
     };
   }
 
-  /**
-   * Cierra/destruye la sesión en Express y elimina la cookie del cliente.
-   */
   async destroy() {
     return new Promise((resolve, reject) => {
       if (!this._req?.session) {
         return resolve({ ok: true, message: 'No había sesión activa' });
       }
 
-      // Nombre por defecto o configurado de la cookie
       const cookieName = this._req.session.cookie?.name || 'connect.sid';
 
       this._req.session.destroy((err) => {
         if (err) return reject(err);
 
-        // Limpiar cookie en la respuesta HTTP
         if (this._res && typeof this._res.clearCookie === 'function') {
           this._res.clearCookie(cookieName);
         }
@@ -145,9 +107,6 @@ class ExpressSession {
     });
   }
 
-  /**
-   * Representación limpia en JSON del objeto de sesión.
-   */
   toJSON() {
     return {
       sessionId: this.sessionId,

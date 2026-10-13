@@ -1,7 +1,6 @@
 'use strict';
 const crypto = require('crypto');
 
-/** Hash de contraseñas con scrypt (incluido en Node, sin dependencias nativas). Formato: scrypt$salt$hash */
 class PasswordHasher {
   static hash(password) {
     const salt = crypto.randomBytes(16).toString('hex');

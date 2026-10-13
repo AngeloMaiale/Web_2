@@ -1,6 +1,4 @@
 'use strict';
-// Uso: node scripts/create-user.js <usuario> <contraseña> <ROLE_CODE> "<Nombre perfil>"
-// Crea un usuario con un primer perfil. Roles base: ADMIN, PAYROLL_MANAGER, EMPLOYEE.
 const { createAuth, PasswordHasher } = require('../src');
 
 (async () => {
@@ -12,7 +10,6 @@ const { createAuth, PasswordHasher } = require('../src');
   const { db, userRepository } = createAuth();
   let user = null;
   try {
-    // Validar el rol ANTES de crear nada: así un rol mal escrito no deja un usuario huérfano
     const role = await db.one('SELECT 1 FROM role WHERE code = $1', [roleCode]);
     if (!role) {
       const roles = (await db.query('SELECT code FROM role ORDER BY code')).map((r) => r.code).join(', ');
