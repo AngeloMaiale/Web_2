@@ -106,9 +106,6 @@ function renderProfiles(profiles) {
   });
 }
 
-/**
- * Consulta al servidor si existe una sesión activa mediante cookies HTTP
- */
 async function checkSession() {
   retryButton.hidden = true;
   setConnectionStatus('Conectando con el servidor…');
@@ -139,9 +136,6 @@ async function checkSession() {
   }
 }
 
-/**
- * Enviar credenciales para iniciar sesión
- */
 async function handleLogin(username, password) {
   if (isSubmitting) return;
 
@@ -177,9 +171,6 @@ async function handleLogin(username, password) {
   }
 }
 
-/**
- * Cerrar sesión
- */
 async function handleLogout() {
   logoutButton.disabled = true;
 
@@ -202,7 +193,6 @@ async function handleLogout() {
   }
 }
 
-// Event Listeners
 loginForm.addEventListener('submit', (event) => {
   event.preventDefault();
 
@@ -230,5 +220,4 @@ retryButton.addEventListener('click', () => {
   checkSession();
 });
 
-// Inicialización: consultar sesión al cargar la página
 checkSession();
