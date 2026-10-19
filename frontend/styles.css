@@ -135,10 +135,8 @@ input {
 }
 
 .btn-primary,
-.btn-secondary,
-.text-button {
+.btn-secondary {
   border-radius: 9px;
-  cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 }
 
@@ -168,39 +166,6 @@ button:disabled {
   color: var(--error);
   font-size: 14px;
   text-align: center;
-}
-
-.connection-row {
-  display: flex;
-  min-height: 24px;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.connection-status {
-  font-size: 13px;
-}
-
-.connection-status[data-state="error"] {
-  color: var(--error);
-}
-
-.connection-status[data-state="success"] {
-  color: var(--success);
-}
-
-.text-button {
-  padding: 4px 8px;
-  border: 1px solid var(--black-tertiary);
-  background: transparent;
-  color: var(--purple-light);
-  font-size: 13px;
-}
-
-.text-button:hover {
-  border-color: var(--purple-primary);
 }
 
 .app-header {
@@ -310,7 +275,6 @@ button:disabled {
 }
 
 .profile-card:hover,
-.profile-card.selected,
 .profile-card:focus-visible {
   border-color: var(--purple-primary);
   outline: none;
@@ -319,7 +283,6 @@ button:disabled {
 }
 
 .profile-card:hover::after,
-.profile-card.selected::after,
 .profile-card:focus-visible::after {
   transform: scaleX(1);
 }

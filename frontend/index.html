@@ -3,44 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0a0a0a">
   <title>Sistema de Nómina</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <section id="login-view" class="view active" aria-labelledby="login-title">
+  <section id="login-view" class="view active">
     <main class="login-card">
       <div class="logo">
         <span class="logo-icon" aria-hidden="true">$$$</span>
-        <h1 id="login-title">Nómina</h1>
+        <h1>Nómina</h1>
         <p class="subtitle">Sistema de Gestión</p>
       </div>
 
-      <form id="login-form">
+      <form id="login-form" novalidate>
         <div class="input-group">
           <label for="username">Usuario</label>
-          <input id="username" name="username" type="text" placeholder="Ej: admin"
-            maxlength="100" autocomplete="username" required>
+          <input id="username" type="text" placeholder="Ej: admin" autocomplete="username">
         </div>
         <div class="input-group">
           <label for="password">Contraseña</label>
-          <input id="password" name="password" type="password" placeholder="••••••••"
-            maxlength="200" autocomplete="current-password" required>
+          <input id="password" type="password" placeholder="••••••••" autocomplete="current-password">
         </div>
         <button id="login-submit" type="submit" class="btn-primary">Iniciar sesión</button>
       </form>
 
-      <p id="login-error" class="error-message" role="alert" aria-live="polite"></p>
-      <div class="connection-row">
-        <p id="connection-status" class="connection-status" role="status" aria-live="polite">
-          Conectando con el servidor…
-        </p>
-        <button id="retry-btn" class="text-button" type="button" hidden>Reintentar</button>
-      </div>
+      <p id="login-error" class="error-message" role="alert"></p>
     </main>
   </section>
 
-  <section id="app-view" class="view" aria-label="Panel de usuario">
+  <section id="app-view" class="view">
     <header class="app-header">
       <div class="header-left">
         <span class="logo-icon-small" aria-hidden="true">$$$</span>
@@ -55,17 +46,14 @@
     <main class="app-content">
       <section class="welcome-card">
         <h3>Bienvenido, <span id="welcome-name"></span></h3>
-        <p>Selecciona un perfil para continuar</p>
+        <p>Perfiles asignados a tu usuario</p>
       </section>
 
-      <section aria-label="Perfiles disponibles">
-        <div id="profiles-container" class="profiles-grid"></div>
-        <p id="profile-selection" class="profile-selection" aria-live="polite"></p>
-      </section>
+      <div id="profiles-container" class="profiles-grid"></div>
 
-      <section class="session-info" aria-label="Información de sesión">
+      <section class="session-info">
+        <p><strong>ID de usuario:</strong> <span id="userid-display"></span></p>
         <p><strong>Sesión válida hasta:</strong> <span id="expires-display"></span></p>
-        <p id="app-connection-status" class="connection-status" role="status" aria-live="polite"></p>
       </section>
     </main>
   </section>

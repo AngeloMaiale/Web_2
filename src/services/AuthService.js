@@ -1,52 +1,29 @@
 'use strict';
-const PasswordHasher = require('../security/PasswordHasher');
+const users = require('../repositories/UserRepository');
+const { verify } = require('../security/PasswordHasher');
 
-class AuthError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = 'AuthError';
+class ValidationError extends Error {}
+class AuthError extends Error {}
+
+function validateCredentials(username, password) {
+  if (typeof username !== 'string' || typeof password !== 'string' || !username.trim() || !password) {
+    throw new ValidationError('Usuario y contraseña son obligatorios');
+  }
+  if (username.length > 100 || password.length > 200) {
+    throw new ValidationError('Usuario o contraseña demasiado largos');
   }
 }
 
-class ValidationError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = 'ValidationError';
+async function authenticate(username, password) {
+  validateCredentials(username, password);
+
+  const user = await users.findByUsername(username.trim());
+  if (!user || !user.active || !verify(password, user.password_hash)) {
+    throw new AuthError('Usuario o contraseña incorrectos');
   }
+
+  const profile = await users.getProfiles(user.id);
+  return { userId: user.id, username: user.username, profile };
 }
 
-const INVALID_CREDENTIALS = 'Usuario o contraseña incorrectos';
-const DUMMY_HASH = PasswordHasher.hash('dummy-password');
-
-class AuthService {
-  constructor({ userRepository }) {
-    this.users = userRepository;
-  }
-
-  static validateCredentials(username, password) {
-    if (typeof username !== 'string' || typeof password !== 'string' || !username.trim() || !password) {
-      throw new ValidationError('Usuario y contraseña son obligatorios');
-    }
-    if (username.length > 100 || password.length > 200) {
-      throw new ValidationError('Usuario o contraseña demasiado largos');
-    }
-  }
-
-  async authenticate(username, password) {
-    AuthService.validateCredentials(username, password);
-
-    const user = await this.users.findByUsername(username.trim());
-    const ok = PasswordHasher.verify(password, user ? user.password_hash : DUMMY_HASH);
-    if (!user || !user.active || !ok) throw new AuthError(INVALID_CREDENTIALS);
-
-    const profile = await this.users.getProfiles(user.id);
-    return {
-      userId: user.id,
-      username: user.username,
-      email: user.email,
-      profile,
-    };
-  }
-}
-
-module.exports = { AuthService, AuthError, ValidationError };
+module.exports = { authenticate, ValidationError, AuthError };

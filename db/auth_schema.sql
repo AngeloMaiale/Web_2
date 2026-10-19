@@ -28,15 +28,6 @@ CREATE TABLE user_profile (
 );
 CREATE INDEX ix_user_profile_user ON user_profile(user_id);
 
-CREATE TABLE user_session (
-    id          bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_id     bigint NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
-    token_hash  text   NOT NULL UNIQUE,
-    created_at  timestamptz NOT NULL DEFAULT now(),
-    expires_at  timestamptz NOT NULL
-);
-CREATE INDEX ix_user_session_user ON user_session(user_id);
-
 INSERT INTO role (code, name) VALUES
   ('ADMIN', 'Administrador'),
   ('PAYROLL_MANAGER', 'Analista de nómina'),

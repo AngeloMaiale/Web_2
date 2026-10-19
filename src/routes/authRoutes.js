@@ -1,57 +1,31 @@
 'use strict';
 const express = require('express');
-const { AuthError, ValidationError } = require('../services/AuthService');
+const { ValidationError, AuthError } = require('../services/AuthService');
 
-function createAuthRoutes() {
-  const router = express.Router();
+const router = express.Router();
 
-  router.post('/login', async (req, res) => {
-    try {
-      const { username, password } = req.body || {};
-      const result = await req.userSession.login(username, password);
+router.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body || {};
+    const session = await req.userSession.login(username, password);
+    res.json({ ok: true, session });
+  } catch (err) {
+    if (err instanceof ValidationError) return res.status(400).json({ ok: false, error: err.message });
+    if (err instanceof AuthError) return res.status(401).json({ ok: false, error: err.message });
+    console.error(err);
+    res.status(500).json({ ok: false, error: 'Error interno del servidor' });
+  }
+});
 
-      return res.status(200).json(result);
-    } catch (err) {
-      if (err instanceof ValidationError) {
-        return res.status(400).json({ ok: false, error: err.message });
-      }
-      if (err instanceof AuthError) {
-        return res.status(401).json({ ok: false, error: err.message });
-      }
+router.get('/session', (req, res) => {
+  const active = req.userSession.hasSession();
+  res.json({ ok: true, active, session: active ? req.userSession.toJSON() : null });
+});
 
-      console.error('Error durante /login:', err);
-      return res.status(500).json({ ok: false, error: 'Error interno del servidor' });
-    }
-  });
+router.post('/logout', async (req, res) => {
+  await req.userSession.logout();
+  res.clearCookie('connect.sid');
+  res.json({ ok: true });
+});
 
-  router.get('/session', (req, res) => {
-    if (req.userSession.hasSession()) {
-      return res.status(200).json({
-        ok: true,
-        active: true,
-        session: req.userSession.toJSON(),
-      });
-    }
-
-    return res.status(200).json({
-      ok: true,
-      active: false,
-      message: 'No hay sesión activa',
-      session: null,
-    });
-  });
-
-  router.post('/logout', async (req, res) => {
-    try {
-      const result = await req.userSession.destroy();
-      return res.status(200).json(result);
-    } catch (err) {
-      console.error('Error durante /logout:', err);
-      return res.status(500).json({ ok: false, error: 'Error al cerrar sesión' });
-    }
-  });
-
-  return router;
-}
-
-module.exports = createAuthRoutes;
+module.exports = router;
