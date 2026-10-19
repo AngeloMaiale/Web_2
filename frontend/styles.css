@@ -356,3 +356,21 @@ button:disabled {
     font-size: 21px;
   }
 }
+
+#process-result {
+  margin-top: 12px;
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+
+.session-info + .session-info {
+  margin-top: 20px;
+}
+
+.session-info h3 {
+  margin-bottom: 14px;
+}
+
+.session-info .input-group {
+  margin-top: 14px;
+}

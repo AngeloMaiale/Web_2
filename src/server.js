@@ -4,6 +4,7 @@ const express = require('express');
 const session = require('express-session');
 const ExpressSession = require('./session/ExpressSession');
 const authRoutes = require('./routes/authRoutes');
+const security = require('./security/Security');
 
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
@@ -23,4 +24,22 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.use('/api/auth', authRoutes);
 
-app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
+app.post('/api/toProcess', async (req, res) => {
+  if (!req.userSession.hasSession()) {
+    return res.status(401).json({ ok: false, error: 'Debe iniciar sesión' });
+  }
+  if (!security.hasPermission(req.session.user.profile, req.body)) {
+    return res.status(403).json({ ok: false, error: 'No tiene permiso para ejecutar este método' });
+  }
+  try {
+    const data = await security.executeMethod(req.body);
+    res.json({ ok: true, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: 'Error al ejecutar el método' });
+  }
+});
+
+security.loadPermission().then(() => {
+  app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
+});

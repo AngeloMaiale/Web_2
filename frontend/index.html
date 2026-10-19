@@ -55,6 +55,21 @@
         <p><strong>ID de usuario:</strong> <span id="userid-display"></span></p>
         <p><strong>Sesión válida hasta:</strong> <span id="expires-display"></span></p>
       </section>
+
+      <section class="session-info">
+        <h3>Prueba de seguridad: nomina / Empresa</h3>
+        <button id="listar-btn" class="btn-secondary" type="button">Listar empresas</button>
+        <div class="input-group">
+          <label for="empresa-nombre">Nombre</label>
+          <input id="empresa-nombre" type="text" placeholder="Ej: Empresa Nueva C.A.">
+        </div>
+        <div class="input-group">
+          <label for="empresa-rif">RIF</label>
+          <input id="empresa-rif" type="text" placeholder="Ej: J-12345678-9">
+        </div>
+        <button id="crear-btn" class="btn-secondary" type="button">Crear empresa</button>
+        <pre id="process-result"></pre>
+      </section>
     </main>
   </section>
 

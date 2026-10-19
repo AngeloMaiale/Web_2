@@ -33,3 +33,43 @@ INSERT INTO role (code, name) VALUES
   ('PAYROLL_MANAGER', 'Analista de nómina'),
   ('EMPLOYEE', 'Trabajador')
 ON CONFLICT (code) DO NOTHING;
+
+CREATE TABLE subsystem (
+    id    bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    code  text NOT NULL UNIQUE
+);
+
+CREATE TABLE class (
+    id           bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    subsystem_id bigint NOT NULL REFERENCES subsystem(id),
+    code         text   NOT NULL,
+    UNIQUE (subsystem_id, code)
+);
+
+CREATE TABLE method (
+    id        bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    class_id  bigint NOT NULL REFERENCES class(id),
+    code      text   NOT NULL,
+    UNIQUE (class_id, code)
+);
+
+CREATE TABLE permission_method (
+    role_id   bigint NOT NULL REFERENCES role(id),
+    method_id bigint NOT NULL REFERENCES method(id),
+    PRIMARY KEY (role_id, method_id)
+);
+
+INSERT INTO subsystem (code) VALUES ('nomina');
+INSERT INTO class (subsystem_id, code) SELECT id, 'Empresa' FROM subsystem WHERE code = 'nomina';
+INSERT INTO method (class_id, code) SELECT id, m FROM class, (VALUES ('listar'), ('crear')) AS v(m) WHERE code = 'Empresa';
+
+INSERT INTO permission_method (role_id, method_id)
+SELECT r.id, m.id
+  FROM (VALUES
+    ('ADMIN',           'listar'),
+    ('ADMIN',           'crear'),
+    ('PAYROLL_MANAGER', 'listar'),
+    ('EMPLOYEE',        'listar')
+  ) AS v(role_code, method_code)
+  JOIN role r   ON r.code = v.role_code
+  JOIN method m ON m.code = v.method_code;

@@ -17,6 +17,7 @@ function showApp(session) {
   $('welcome-name').textContent = session.username;
   $('userid-display').textContent = session.userId;
   $('expires-display').textContent = new Date(session.expiresAt).toLocaleString();
+  $('process-result').textContent = '';
 
   $('profiles-container').replaceChildren(...session.profile.map((p) => {
     const card = document.createElement('div');
@@ -61,5 +62,19 @@ $('logout-btn').addEventListener('click', async () => {
   await api('/logout', 'POST');
   showLogin();
 });
+
+async function toProcess(method, params = []) {
+  const response = await fetch('/api/toProcess', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subsystem: 'nomina', class: 'Empresa', method, params }),
+  });
+  $('process-result').textContent = `HTTP ${response.status}\n` + JSON.stringify(await response.json(), null, 2);
+}
+
+$('listar-btn').addEventListener('click', () => toProcess('listar'));
+$('crear-btn').addEventListener('click', () =>
+  toProcess('crear', [$('empresa-nombre').value.trim(), $('empresa-rif').value.trim()]));
 
 api('/session').then((data) => (data.active ? showApp(data.session) : showLogin()));
