@@ -3,6 +3,25 @@
 const API = '/api/auth';
 const $ = (id) => document.getElementById(id);
 
+let txCatalog = {
+  listar: 1,
+  crear: 2
+};
+
+async function loadTxCatalog() {
+  try {
+    const res = await fetch('/api/txList', { credentials: 'include' });
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.list)) {
+      data.list.forEach((item) => {
+        txCatalog[item.method] = item.tx;
+      });
+    }
+  } catch (err) {
+    // Si no está disponible aún, usa los valores por defecto
+  }
+}
+
 function showLogin(error = '') {
   $('app-view').classList.remove('active');
   $('login-view').classList.add('active');
@@ -28,6 +47,8 @@ function showApp(session) {
     card.querySelector('.display-name').textContent = p.roleName;
     return card;
   }));
+
+  loadTxCatalog();
 }
 
 function validate(username, password) {
@@ -63,14 +84,23 @@ $('logout-btn').addEventListener('click', async () => {
   showLogin();
 });
 
-async function toProcess(method, params = []) {
+// Llamada mediante TX (Foto 7): oculta el nombre del método y de la clase
+async function toProcess(action, params = []) {
+  const tx = typeof action === 'number' ? action : (txCatalog[action] || action);
+  const payload = typeof tx === 'number' ? { tx, params } : { method: action, params };
+
   const response = await fetch('/api/toProcess', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ subsystem: 'nomina', class: 'Empresa', method, params }),
+    body: JSON.stringify(payload),
   });
-  $('process-result').textContent = `HTTP ${response.status}\n` + JSON.stringify(await response.json(), null, 2);
+
+  const resJson = await response.json();
+  $('process-result').textContent =
+    `HTTP ${response.status}\n` +
+    `Payload enviado (oculta método): ${JSON.stringify(payload)}\n\n` +
+    JSON.stringify(resJson, null, 2);
 }
 
 $('listar-btn').addEventListener('click', () => toProcess('listar'));

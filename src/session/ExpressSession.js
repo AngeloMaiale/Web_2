@@ -12,7 +12,10 @@ class ExpressSession {
 
   async login(username, password) {
     if (!this.hasSession()) {
-      this.req.session.user = await auth.authenticate(username, password);
+      const user = await auth.authenticate(username, password);
+      this.req.session.user = user;
+      // Compatibilidad con req.session.userData.profile (Foto 7)
+      this.req.session.userData = user;
     }
     return this.toJSON();
   }

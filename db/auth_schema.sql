@@ -59,6 +59,19 @@ CREATE TABLE permission_method (
     PRIMARY KEY (role_id, method_id)
 );
 
+CREATE TABLE IF NOT EXISTS option (
+    id           bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    subsystem_id bigint NOT NULL REFERENCES subsystem(id),
+    code         text   NOT NULL,
+    UNIQUE (subsystem_id, code)
+);
+
+CREATE TABLE IF NOT EXISTS permission_option (
+    role_id   bigint NOT NULL REFERENCES role(id),
+    option_id bigint NOT NULL REFERENCES option(id),
+    PRIMARY KEY (role_id, option_id)
+);
+
 INSERT INTO subsystem (code) VALUES ('nomina');
 INSERT INTO class (subsystem_id, code) SELECT id, 'Empresa' FROM subsystem WHERE code = 'nomina';
 INSERT INTO method (class_id, code) SELECT id, m FROM class, (VALUES ('listar'), ('crear')) AS v(m) WHERE code = 'Empresa';

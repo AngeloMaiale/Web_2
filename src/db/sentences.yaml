@@ -1,0 +1,42 @@
+# Consultas SQL del sistema cargadas desde YAML
+
+# Autenticación de usuario
+getUser: >
+  SELECT id, username, password_hash, active
+  FROM app_user
+  WHERE lower(username) = lower($1)
+
+# Consulta de perfiles asignados a un usuario
+getProfiles: >
+  SELECT p.id AS "profileId", r.code AS role, r.name AS "roleName",
+         p.display_name AS "displayName"
+  FROM user_profile p
+  JOIN role r ON r.id = p.role_id
+  WHERE p.user_id = $1 AND p.active
+  ORDER BY p.id
+
+# Carga de todos los métodos de los BO para construir el mapa de transacciones (TX)
+getAllBOMethods: >
+  SELECT m.id AS tx, s.code AS subsystem, c.code AS class, m.code AS method
+  FROM method m
+  JOIN class c ON c.id = m.class_id
+  JOIN subsystem s ON s.id = c.subsystem_id
+  ORDER BY m.id
+
+# Carga de permisos para métodos (permisos requeridos por rol)
+getPermissionMethods: >
+  SELECT s.code AS subsystem, c.code AS class, m.code AS method, r.code AS role, r.id AS role_id
+  FROM permission_method pm
+  JOIN method m ON m.id = pm.method_id
+  JOIN class c ON c.id = m.class_id
+  JOIN subsystem s ON s.id = c.subsystem_id
+  JOIN role r ON r.id = pm.role_id
+
+# Carga de permisos para opciones (menús / interfaz)
+getPermissionOptions: >
+  SELECT s.code AS subsystem, o.code AS option, r.code AS role, r.id AS role_id
+  FROM permission_option po
+  JOIN option o ON o.id = po.option_id
+  JOIN subsystem s ON s.id = o.subsystem_id
+  JOIN role r ON r.id = po.role_id
+
