@@ -1,0 +1,204 @@
+# Sentencias SQL del subsistema de seguridad, sesión, permisos y auditoría (Integrante 1)
+
+getUser: |
+  SELECT id, username, password_hash, email, active
+    FROM app_user
+   WHERE lower(username) = lower($1)
+
+getUserById: |
+  SELECT id, username, email, active, created_at
+    FROM app_user
+   WHERE id = $1
+
+getProfiles: |
+  SELECT p.id AS "profileId",
+         r.id AS "roleId",
+         r.code AS role,
+         r.name AS "roleName",
+         p.display_name AS "displayName",
+         p.company_id AS "companyId",
+         p.employee_id AS "employeeId"
+    FROM user_profile p
+    JOIN role r ON r.id = p.role_id
+   WHERE p.user_id = $1 AND p.active
+   ORDER BY p.id
+
+getAllBOMethods: |
+  SELECT m.tx_code AS tx,
+         m.id AS method_id,
+         s.code AS subsystem,
+         c.code AS class,
+         m.code AS method
+    FROM method m
+    JOIN class c ON c.id = m.class_id
+    JOIN subsystem s ON s.id = c.subsystem_id
+   ORDER BY m.tx_code
+
+getPermissionMethods: |
+  SELECT s.code AS subsystem,
+         c.code AS class,
+         m.code AS method,
+         m.tx_code AS tx,
+         r.code AS role,
+         r.id AS role_id
+    FROM permission_method pm
+    JOIN method m ON m.id = pm.method_id
+    JOIN class c ON c.id = m.class_id
+    JOIN subsystem s ON s.id = c.subsystem_id
+    JOIN role r ON r.id = pm.role_id
+
+getPermissionOptions: |
+  SELECT s.code AS subsystem,
+         o.code AS option,
+         o.id AS option_id,
+         r.code AS role,
+         r.id AS role_id
+    FROM permission_option po
+    JOIN option o ON o.id = po.option_id
+    JOIN subsystem s ON s.id = o.subsystem_id
+    JOIN role r ON r.id = po.role_id
+
+getAllOptions: |
+  SELECT o.id, s.code AS subsystem, o.code AS option
+    FROM option o
+    JOIN subsystem s ON s.id = o.subsystem_id
+   ORDER BY o.id
+
+getMethodById: |
+  SELECT m.id, m.tx_code AS tx, s.code AS subsystem, c.code AS class, m.code AS method
+    FROM method m
+    JOIN class c ON c.id = m.class_id
+    JOIN subsystem s ON s.id = c.subsystem_id
+   WHERE m.id = $1
+
+getOptionById: |
+  SELECT o.id, s.code AS subsystem, o.code AS option
+    FROM option o
+    JOIN subsystem s ON s.id = o.subsystem_id
+   WHERE o.id = $1
+
+getRoleById: |
+  SELECT id, code, name
+    FROM role
+   WHERE id = $1
+
+grantMethodPermission: |
+  INSERT INTO permission_method (role_id, method_id)
+  VALUES ($1, $2)
+  ON CONFLICT (role_id, method_id) DO NOTHING
+
+revokeMethodPermission: |
+  DELETE FROM permission_method
+   WHERE role_id = $1 AND method_id = $2
+
+grantOptionPermission: |
+  INSERT INTO permission_option (role_id, option_id)
+  VALUES ($1, $2)
+  ON CONFLICT (role_id, option_id) DO NOTHING
+
+revokeOptionPermission: |
+  DELETE FROM permission_option
+   WHERE role_id = $1 AND option_id = $2
+
+listUsers: |
+  SELECT u.id,
+         u.username,
+         u.email,
+         u.active,
+         u.created_at AS "createdAt",
+         COALESCE(
+           json_agg(
+             json_build_object(
+               'profileId', p.id,
+               'roleId', r.id,
+               'role', r.code,
+               'roleName', r.name,
+               'displayName', p.display_name,
+               'companyId', p.company_id,
+               'employeeId', p.employee_id,
+               'active', p.active
+             ) ORDER BY p.id
+           ) FILTER (WHERE p.id IS NOT NULL),
+           '[]'::json
+         ) AS profiles
+    FROM app_user u
+    LEFT JOIN user_profile p ON p.user_id = u.id
+    LEFT JOIN role r ON r.id = p.role_id
+   GROUP BY u.id
+   ORDER BY u.id
+
+createUser: |
+  INSERT INTO app_user (username, password_hash, email, active)
+  VALUES ($1, $2, $3, COALESCE($4, true))
+  RETURNING id, username, email, active, created_at AS "createdAt"
+
+updateUser: |
+  UPDATE app_user
+     SET email = COALESCE($2, email),
+         active = COALESCE($3, active)
+   WHERE id = $1
+  RETURNING id, username, email, active, created_at AS "createdAt"
+
+updateUserPassword: |
+  UPDATE app_user
+     SET password_hash = $2
+   WHERE id = $1
+  RETURNING id, username
+
+assignUserProfile: |
+  INSERT INTO user_profile (user_id, role_id, display_name, company_id, employee_id, active)
+  VALUES ($1, $2, $3, $4, $5, true)
+  RETURNING id, user_id AS "userId", role_id AS "roleId", display_name AS "displayName",
+            company_id AS "companyId", employee_id AS "employeeId", active
+
+listRoles: |
+  SELECT id, code, name
+    FROM role
+   ORDER BY id
+
+listAllMethodsForMatrix: |
+  SELECT m.id,
+         m.tx_code AS tx,
+         s.code AS subsystem,
+         c.code AS class,
+         m.code AS method
+    FROM method m
+    JOIN class c ON c.id = m.class_id
+    JOIN subsystem s ON s.id = c.subsystem_id
+   ORDER BY m.tx_code
+
+listAllOptionsForMatrix: |
+  SELECT o.id,
+         s.code AS subsystem,
+         o.code AS option
+    FROM option o
+    JOIN subsystem s ON s.id = o.subsystem_id
+   ORDER BY o.id
+
+listMethodPermissions: |
+  SELECT role_id AS "roleId", method_id AS "methodId"
+    FROM permission_method
+
+listOptionPermissions: |
+  SELECT role_id AS "roleId", option_id AS "optionId"
+    FROM permission_option
+
+insertAuditLog: |
+  INSERT INTO audit_log (table_name, row_id, action, old_data, new_data, actor)
+  VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6)
+
+listAuditLogs: |
+  SELECT id,
+         table_name AS "tableName",
+         row_id AS "rowId",
+         action,
+         old_data AS "oldData",
+         new_data AS "newData",
+         actor,
+         at
+    FROM audit_log
+   WHERE ($1::text IS NULL OR table_name = $1)
+     AND ($2::text IS NULL OR action = $2)
+     AND ($3::text IS NULL OR lower(actor) LIKE '%' || lower($3) || '%')
+   ORDER BY id DESC
+   LIMIT COALESCE($4::int, 100)

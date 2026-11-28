@@ -1,0 +1,11 @@
+# Sentencias SQL del subsistema de nómina (archivo propiedad de Integrante 2)
+
+listarEmpresas: |
+  SELECT id, legal_name AS nombre, rif, ivss_employer_no AS "ivssEmployerNo", address
+    FROM company
+   ORDER BY id
+
+crearEmpresa: |
+  INSERT INTO company (legal_name, rif)
+  VALUES ($1, $2)
+  RETURNING id, legal_name AS nombre, rif

@@ -1,9 +1,7 @@
 'use strict';
-const users = require('../repositories/UserRepository');
-const { verify } = require('../security/PasswordHasher');
-
-class ValidationError extends Error {}
-class AuthError extends Error {}
+const users = require('./UserRepository');
+const { verify } = require('./PasswordHasher');
+const { ValidationError, AuthError } = require('../../core/Errors');
 
 function validateCredentials(username, password) {
   if (typeof username !== 'string' || typeof password !== 'string' || !username.trim() || !password) {
@@ -18,12 +16,20 @@ async function authenticate(username, password) {
   validateCredentials(username, password);
 
   const user = await users.findByUsername(username.trim());
-  if (!user || !user.active || !verify(password, user.password_hash)) {
+  const validPassword = user && user.active ? await verify(password, user.password_hash) : false;
+  if (!validPassword) {
     throw new AuthError('Usuario o contraseña incorrectos');
   }
 
-  const profile = await users.getProfiles(user.id);
-  return { userId: user.id, username: user.username, profile };
+  const profiles = await users.getProfiles(user.id);
+  const activeProfile = profiles[0] || null;
+  return {
+    userId: user.id,
+    username: user.username,
+    profiles,
+    activeProfile,
+    employeeId: activeProfile?.employeeId ?? null,
+  };
 }
 
 module.exports = { authenticate, ValidationError, AuthError };

@@ -1,5 +1,5 @@
 'use strict';
-const db = require('../db/Database');
+const db = require('../db/DBComponent');
 
 async function findByUsername(username) {
   const rows = await db.exe('getUser', [username]);

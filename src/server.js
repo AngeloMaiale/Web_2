@@ -1,80 +1,150 @@
 'use strict';
+require('dotenv').config();
+
+const fs = require('fs');
+const http = require('http');
+const https = require('https');
 const path = require('path');
 const express = require('express');
-const session = require('express-session');
-const ExpressSession = require('./session/ExpressSession');
-const authRoutes = require('./routes/authRoutes');
-const security = require('./security/Security');
+const cors = require('cors');
+
+const authRoutes = require('./subsystems/auth/authRoutes');
+const jwtSession = require('./subsystems/auth/JwtSession');
+const security = require('./subsystems/seguridad/Security');
+const logger = require('./core/Logger');
+const { AuthError, ForbiddenError, ValidationError, okResponse, translateError } = require('./core/Errors');
 
 const PORT = Number(process.env.PORT) || 3000;
+const HTTPS_PORT = Number(process.env.HTTPS_PORT) || 3443;
+const ENABLE_HTTPS = String(process.env.ENABLE_HTTPS || '').toLowerCase() === 'true';
+
 const app = express();
 
-app.use(express.json());
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'nomina-secreto-dev',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: 'lax', maxAge: 8 * 60 * 60 * 1000 },
+// Configuración CORS
+const allowedOrigins = (process.env.CORS_ORIGIN || `http://localhost:${PORT}`)
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new ForbiddenError('Origen no permitido por CORS'));
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Authorization'],
 }));
 
-app.use((req, res, next) => {
-  req.userSession = new ExpressSession(req);
+app.use(express.json());
+
+// Adjunta sesión si viene JWT válido en cabecera para trazabilidad en httpLogger
+app.use((req, _res, next) => {
+  req.sessionUser = jwtSession.getSession(req);
   next();
 });
+app.use(logger.httpLogger);
 
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.use('/api/auth', authRoutes);
 
-// Endpoint centralizado para procesar transacciones (Fotos 6 y 7)
-// Sin carpetas middleware: todo integrado directamente en la ruta
-const processHandler = async (req, resp) => {
-  // 1. //tiene session
-  if (!req.userSession.hasSession()) {
-    return resp.status(401).json({ ok: false, error: 'Debe iniciar sesión' });
-  }
-
-  const profiles = req.session.userData?.profile || req.session.user?.profile;
-
-  // 2. //tiene permiso
-  if (!security.hasPermission(profiles, req.body)) {
-    return resp.status(403).json({ ok: false, error: 'No tiene permiso para ejecutar esta acción' });
-  }
-
-  // 3. //ejecuto el metodo
+// Único endpoint centralizado de procesos (PDF 1)
+app.post('/api/toProcess', async (req, res) => {
   try {
-    const data = await security.executeMethod(req.body);
-    resp.json({ ok: true, data });
-  } catch (err) {
-    console.error('[toProcess] Error al ejecutar:', err.message);
-    resp.status(500).json({ ok: false, error: 'Error al ejecutar el método' });
-  }
-};
-
-// Se habilita tanto en /api/toProcess como en /toProcess
-app.post('/api/toProcess', processHandler);
-app.post('/toProcess', processHandler);
-
-// Endpoint auxiliar para que la interfaz conozca las TX disponibles según los permisos del usuario
-app.get('/api/txList', (req, res) => {
-  if (!req.userSession.hasSession()) {
-    return res.status(401).json({ ok: false, error: 'No autenticado' });
-  }
-  const profiles = req.session.userData?.profile || req.session.user?.profile;
-  const list = [];
-  for (const [tx, info] of security.txMap.entries()) {
-    if (security.hasPermission(profiles, { tx })) {
-      list.push({ tx, subsystem: info.subsystem, class: info.class, method: info.method });
+    // 1. Validar sesión JWT en cabecera
+    const session = req.sessionUser || jwtSession.getSession(req);
+    if (!session) {
+      logger.security('Acceso denegado en /api/toProcess: sin JWT válido', { ip: req.ip });
+      throw new AuthError('Debe iniciar sesión');
     }
+
+    // 2. Validar estructura básica de la transacción
+    const { tx, params } = req.body || {};
+    const txNum = Number(tx);
+    if (!Number.isInteger(txNum) || txNum <= 0) {
+      throw new ValidationError('El campo tx debe ser un número entero positivo');
+    }
+
+    // 3. Validar permiso en caché Map
+    const profilesToCheck = session.activeProfile ? [session.activeProfile] : session.profiles;
+    if (!security.hasPermission(profilesToCheck, txNum)) {
+      logger.security('Acceso prohibido en /api/toProcess (403)', {
+        userId: session.userId,
+        username: session.username,
+        activeProfile: session.activeProfile?.role || null,
+        tx: txNum,
+        ip: req.ip,
+      });
+      throw new ForbiddenError('No tiene permiso para ejecutar esta acción');
+    }
+
+    // 4. Ejecutar Business Object pasando el contexto autenticado
+    const context = {
+      userId: session.userId,
+      username: session.username,
+      activeProfile: session.activeProfile,
+      profiles: session.profiles,
+      employeeId: session.employeeId,
+      ip: req.ip,
+    };
+
+    const data = await security.executeMethod({ tx: txNum, params }, context);
+    res.json(okResponse(data));
+  } catch (err) {
+    const { status, body } = translateError(err);
+    if (status >= 500) {
+      logger.error('Error en /api/toProcess', {
+        tx: req.body?.tx ?? null,
+        name: err.name,
+        code: err.code || null,
+        error: err.message || String(err),
+        causes: Array.isArray(err.errors) ? err.errors.map((e) => e.message || e.code) : undefined,
+        stack: err.stack,
+      });
+    }
+    res.status(status).json(body);
   }
-  res.json({ ok: true, list });
 });
 
-// Apenas el server empiece a escuchar el puerto, se cargan los métodos de los BO y los mapas de permisos y TX
-app.listen(PORT, async () => {
-  console.log(`Servidor en http://localhost:${PORT}`);
+// Manejador global de errores (incluye errores CORS o JSON malformado)
+app.use((err, _req, res, _next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    return res.status(400).json({ ok: false, code: 'VALIDATION_ERROR', message: 'JSON inválido en la petición' });
+  }
+  const { status, body } = translateError(err);
+  logger.error('Error no controlado en Express', { status, error: err?.message });
+  res.status(status).json(body);
+});
+
+async function start() {
   try {
     await security.loadPermission();
   } catch (err) {
-    console.error('Error cargando seguridad en el inicio:', err.message);
+    logger.error('No se pudo cargar la configuración de seguridad al iniciar', {
+      name: err.name,
+      code: err.code || null,
+      error: err.message || String(err),
+      causes: Array.isArray(err.errors) ? err.errors.map((e) => e.message || e.code) : undefined,
+    });
   }
-});
+
+  if (ENABLE_HTTPS) {
+    const keyPath = path.resolve(process.cwd(), process.env.TLS_KEY_PATH || 'certs/key.pem');
+    const certPath = path.resolve(process.cwd(), process.env.TLS_CERT_PATH || 'certs/cert.pem');
+    const credentials = {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath),
+    };
+    https.createServer(credentials, app).listen(HTTPS_PORT, () => {
+      logger.info(`Servidor HTTPS/TLS escuchando en https://localhost:${HTTPS_PORT}`);
+    });
+  } else {
+    http.createServer(app).listen(PORT, () => {
+      logger.info(`Servidor HTTP escuchando en http://localhost:${PORT}`);
+    });
+  }
+}
+
+start();
